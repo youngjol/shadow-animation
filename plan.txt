@@ -1,0 +1,2 @@
+V1: Cast rays with fixed directions from mouse position 
+V2: Cast rays towards the ends of each line segment.
