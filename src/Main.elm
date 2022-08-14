@@ -29,25 +29,32 @@ init : () -> (Model, Cmd Msg)
 init _ =
   ( { mousePos = { x = 0, y = 0 }
     , lines = 
-        [ { startPt = { x = boxWidth, y = boxHeight }, angle = 90, length = boxHeight}
-        , { startPt = { x = boxWidth, y = 0 }, angle = 180, length = boxWidth}
-        , { startPt = { x = 0, y = 0 }, angle = 270, length = boxHeight}
-        , { startPt = { x = 0, y = boxHeight }, angle = 0, length = boxWidth}
-        , { startPt = { x = 3/4*boxWidth, y = 3/4*boxHeight }, angle = 90, length = 1/3*boxHeight}
-        , { startPt = { x = 3/4*boxWidth, y = 1/4*boxHeight }, angle = 180, length = 1/3*boxWidth}
-        , { startPt = { x = 1/4*boxWidth, y = 1/4*boxHeight }, angle = 270, length = 1/3*boxHeight}
-        , { startPt = { x = 1/4*boxWidth, y = 3/4*boxHeight }, angle = 0, length = 1/3*boxWidth}
+        [ makeLine 1 1 boxHeight 90
+        , makeLine 1 0 boxWidth 180
+        , makeLine 0 0 boxHeight 270
+        , makeLine 0 1 boxWidth 0
+        , makeLine 0.75 0.75 (1/3*boxHeight) 30
+        , makeLine 0.75 0.25 (1/3*boxHeight) 130
+        , makeLine 0.25 0.25 (1/3*boxHeight) 270
+        , makeLine 0.25 0.75 (1/3*boxWidth) 0
+        , makeLine 0.25 0.75 (1/3*boxWidth) 0
+        , makeLine 0.5 0.95 (1/3*boxWidth) 145
+        , makeLine 0.1 0.3 (1/4*boxHeight) 35
+        , makeLine 0.7 0.5 (0.4*boxWidth) 165
         ]
     , rays = 
-        [ { startPt = { x = boxWidth/2, y = boxHeight/2 }, angle = 0, length = boxWidth/2}
-        , { startPt = { x = boxWidth/2, y = boxHeight/2 }, angle = 90, length = boxHeight/2}
-        , { startPt = { x = boxWidth/2, y = boxHeight/2 }, angle = 180, length = boxWidth/2}
-        , { startPt = { x = boxWidth/2, y = boxHeight/2 }, angle = 270, length = boxHeight/2}
-        , { startPt = { x = 1/4*boxWidth, y = 3/4*boxHeight }, angle = 210, length = 1/3*boxWidth}
-        ]
+        List.map (makeLine 0 0 0) ( List.map (multiply 5) (List.map toFloat (List.range 1 72)) )
     }
   , Cmd.none
   )
+
+multiply : Float -> Float -> Float
+multiply a b =
+  a * b
+
+makeLine : Float -> Float -> Float -> Float -> Line
+makeLine startX startY length angle = -- startX, startY are proportions of boxWidth & boxHeight
+  { startPt = { x = boxWidth * startX, y = boxHeight * startY }, angle = angle, length = length}
 
 boxWidth : Float
 boxWidth = 500
@@ -217,23 +224,41 @@ validIntersect t1 t2 len =
 view : Model -> Html msg
 view model =
   Svg.svg [ width (String.fromFloat boxWidth) , height (String.fromFloat boxHeight)
-          , viewBox ( "0 " ++ "0 " ++ (String.fromFloat (boxWidth)) 
-                      ++ " " ++ (String.fromFloat (boxHeight)) )
-          , style "red" 
+          -- , viewBox ( "0 " ++ "0 " ++ (String.fromFloat (boxWidth)) 
+          --             ++ " " ++ (String.fromFloat (boxHeight)) )
           ]
-          ( List.concat [ (List.map drawLine model.lines)
-                        , (List.map drawLine model.rays) ]
+          ( List.concat [ (List.map (drawLine "midnightblue") model.lines)
+                        , [drawVisibilityPolygon model.rays] 
+                        , (List.map (drawLine "gold") model.rays)   
+                        ]
           )
 
-drawLine : Line -> Svg.Svg msg
-drawLine line =
+drawLine : String -> Line -> Svg.Svg msg
+drawLine color line =
     Svg.line
     [ x1 (String.fromFloat line.startPt.x)
     , y1 (String.fromFloat line.startPt.y)
     , x2 (String.fromFloat (lineEndPt line).x)
     , y2 (String.fromFloat (lineEndPt line).y)
-    , stroke "black"]
+    , stroke color]
     []
+
+drawVisibilityPolygon : List Line -> Svg.Svg msg
+drawVisibilityPolygon rays =
+  Svg.polygon 
+  [ points
+      (rays 
+        |> List.map lineEndPt -- get end points of given list of lines
+        |> List.map pointAsString
+        |> String.concat
+      )
+  , fill "lightsteelblue"
+  ]
+  []
+
+pointAsString : Point -> String
+pointAsString pt =
+  (String.fromInt (round pt.x)) ++ "," ++ (String.fromInt (round pt.y) ++ " ")
 
 
 --------------------------------------------------------------------------------
