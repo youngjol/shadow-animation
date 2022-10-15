@@ -1,0 +1,21 @@
+name: Elm-Webpage
+
+on:
+  push:
+    branches: [main]
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+    - name: Set up Elm environment
+      uses: jorelali/setup-elm@v3
+      with: 
+        elm-version: 0.19.1
+    - name: Compile Main elm file
+      run: elm make src/Main.elm
+     
+    
+
+    
