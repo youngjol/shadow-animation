@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@main
     - name: Setup Elm environment
-      uses: ./.github/workflows/action.yml
+      uses: ./.github/workflows
       with: 
         elm-version: 0.19.1
     - name: Compile elm Main file
