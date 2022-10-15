@@ -33,20 +33,20 @@ init _ =
         , makeLine 1 0 boxWidth 180
         , makeLine 0 0 boxHeight 270
         , makeLine 0 1 boxWidth 0
-        , makeLine 0.75 0.75 (1/3*boxHeight) 30
+        , makeLine 0.75 0.75 (1/4*boxHeight) 30
         , makeLine 0.75 0.25 (1/3*boxHeight) 130
         , makeLine 0.25 0.25 (1/3*boxHeight) 270
-        , makeLine 0.25 0.75 (1/3*boxWidth) 0
         , makeLine 0.25 0.75 (1/3*boxWidth) 0
         , makeLine 0.5 0.95 (1/3*boxWidth) 145
         , makeLine 0.1 0.3 (1/4*boxHeight) 35
         , makeLine 0.7 0.5 (0.4*boxWidth) 165
         ]
-    , rays = 
-        List.map (makeLine 0 0 0) ( List.map (multiply 5) (List.map toFloat (List.range 1 72)) )
+    , rays = []
     }
   , Cmd.none
   )
+
+-- just initialize 3x the number of lines / or maybe we don't even need any tbh 
 
 multiply : Float -> Float -> Float
 multiply a b =
@@ -54,7 +54,7 @@ multiply a b =
 
 makeLine : Float -> Float -> Float -> Float -> Line
 makeLine startX startY length angle = -- startX, startY are proportions of boxWidth & boxHeight
-  { startPt = { x = boxWidth * startX, y = boxHeight * startY }, angle = angle, length = length}
+  { initPt = { x = boxWidth * startX, y = boxHeight * startY }, angle = angle, length = length}
 
 boxWidth : Float
 boxWidth = 500
@@ -77,7 +77,7 @@ type alias Point =
   }
 
 type alias Line = 
-  { startPt : Point
+  { initPt : Point
   , angle : Float -- in degrees
   , length : Float
   }
@@ -85,27 +85,41 @@ type alias Line =
 -- Return a line's starting point's x,y-coordinates as a tuple
 getXY : Line -> (Float, Float)
 getXY line =
-  Tuple.pair line.startPt.x line.startPt.y
+  Tuple.pair line.initPt.x line.initPt.y
 
 -- Return a line's unit direction vector's x,y-coordinates as a tuple
 getXYdir : Line -> (Float, Float)
 getXYdir line =
   Tuple.pair (cos (degrees line.angle)) (sin (degrees line.angle))
 
+
 -- Return end point of given line
-lineEndPt : Line -> Point
-lineEndPt line =
+lineFinalPt : Line -> Point
+lineFinalPt line =
   let
-    (x1, y1) = getXY line
-    (dx, dy) = getXYdir line
+    -- lineInput = Debug.log "line" line
+    -- (x1, y1) = (getXY line)
+    -- (dx, dy) =  Debug.log "lineFinalPt xy direction" (getXYdir line)
+    (x1, y1) = (getXY line)
+    (dx, dy) =  (getXYdir line)
     len = line.length
   in
-    {x = x1 + len*dx, y = y1 - len*dy}
+    {x = toFloat (round (x1 + len*dx)), y = toFloat (round (y1 - len*dy))}
 
 linesParallel : Line -> Line -> Bool
 linesParallel line1 line2 =
   (cos (degrees line1.angle) == cos (degrees line2.angle)) || 
   (sin (degrees line1.angle) == sin (degrees line2.angle)) 
+
+-- NEW
+-- Return the angle (direction) of the line with its end points being the given two points
+twoPtsAngle : Point -> Point -> Float
+twoPtsAngle initPt finalPt =
+  let
+    dx = finalPt.x - initPt.x
+    dy = -(finalPt.y - initPt.y)
+  in
+    (atan2 dy dx) * 180 / pi
 
 
 --------------------------------------------------------------------------------
@@ -120,7 +134,7 @@ update msg model =
   case msg of
     MouseMove position -> 
       ( { model | mousePos = constrainPos position, 
-          rays = (updateRays position model.rays model.lines) 
+          rays = (updateRays position model.lines) 
         }
       , Cmd.none
       )
@@ -140,19 +154,51 @@ constrainFloat val min max =
   else if val > max then max
   else val
 
-updateRays : Point -> List Line -> List Line -> List Line
-updateRays mousePos rays lines =
+-- NEW
+updateRays : Point -> List Line -> List Line
+updateRays mousePos lines =
   let
-    -- Update rays' startPt to given mousePos
-    newRays = List.map (updatePoint mousePos) rays
+    -- -- Create a list of all end points of given lines
+    -- linePts = List.concat [(List.map .initPt lines), (List.map lineFinalPt lines)]
+    -- -- Create a list of the angle of the ray from mousePos to each point in linePts
+    -- rayAngles =  ((List.map (twoPtsAngle mousePos) linePts))
+    -- -- Create a list of rays (lines) with angles corresponding to each of rayAngles & its +/-0.005 offset
+    -- newRays = Debug.log "newRays" (List.concat (List.map (getOffsetRays 0 mousePos) rayAngles))
+    -- -- Get new ray lengths by finding nearest intersection with a line 
+    -- newLengths = Debug.log "New lengths" (List.map (nearestIntersect lines) newRays)
+    -- updatedRays = List.map2 updateLength newLengths newRays
+    -- initPts = Debug.log "Ray init pts" (List.map .initPt updatedRays)
+    -- finalPts = Debug.log "Ray final pts" (List.map lineFinalPt updatedRays)
+
+    -- Create a list of all end points of given lines
+    linePts = List.concat [(List.map .initPt lines), (List.map lineFinalPt lines)]
+    -- Create a list of the angle of the ray from mousePos to each point in linePts
+    rayAngles =  ((List.map (twoPtsAngle mousePos) linePts))
+    -- Create a list of rays (lines) with angles corresponding to each of rayAngles & its +/-0.005 offset
+    newRays = List.concat (List.map (getOffsetRays 0.5 mousePos) rayAngles)
     -- Get new ray lengths by finding nearest intersection with a line 
-    newLengths = List.map (nearestIntersect lines) newRays 
-  in  
-    List.map2 updateLength newLengths newRays
+    newLengths = List.map (nearestIntersect lines) newRays
+    updatedRays = List.map2 updateLength newLengths newRays
+    
+    
+  in
+    List.sortBy .angle (List.map2 updateLength newLengths newRays)
+    
+
+
+getOffsetRays : Float -> Point -> Float -> List Line
+getOffsetRays offSet initPt angle =
+  [ { initPt = initPt, angle = angle - offSet, length = 0}
+  , { initPt = initPt, angle = angle - offSet * 1/2, length = 0}
+  , { initPt = initPt, angle = angle, length = 0}
+  , { initPt = initPt, angle = angle + offSet * 1/2, length = 0}
+  , { initPt = initPt, angle = angle + offSet, length = 0}
+  ]
+
 
 updatePoint : Point -> Line -> Line
 updatePoint pt line =
-  { line | startPt = pt}
+  { line | initPt = pt}
 
 updateLength : Float -> Line -> Line
 updateLength len line =
@@ -179,8 +225,10 @@ findIntersect ray line =
   else if List.member (Tuple.second (getXYdir ray)) [-1, 1] then
     findVerticalRayIntersect ray line
   else
+    -- Debug.log "find intersect" (findNonVerticalRayIntersect ray line)
     findNonVerticalRayIntersect ray line
 
+-- NEW FIXED: toFloat round
 findNonVerticalRayIntersect : Line -> Line -> Maybe Float
 findNonVerticalRayIntersect ray line =
   let
@@ -188,11 +236,12 @@ findNonVerticalRayIntersect ray line =
     (r_dx, r_dy) = getXYdir ray
     (s_px, s_py) = getXY line
     (s_dx, s_dy) = getXYdir line
-    t2 = (r_dx * (s_py-r_py) - r_dy * (r_px-s_px)) / (-s_dx * r_dy + s_dy * r_dx)
-    t1 = (s_px + s_dx * t2 - r_px) / r_dx -- Potential length of ray to intersection with line
+    t2 = Debug.log "t2" ((r_dx * (s_py-r_py) - r_dy * (r_px-s_px)) / (-s_dx * r_dy + s_dy * r_dx))
+    t1 =  Debug.log "t1" ((s_px + s_dx * t2 - r_px) / r_dx )-- Potential length of ray to intersection with line
   in
-    validIntersect t1 t2 line.length
+    Debug.log "validIntersect" (validIntersect (toFloat (round t1)) (toFloat (round t2)) line.length)
 
+-- NEW FIXED: toFloat round
 findVerticalRayIntersect : Line -> Line -> Maybe Float
 findVerticalRayIntersect ray line = 
   let
@@ -200,18 +249,20 @@ findVerticalRayIntersect ray line =
     (r_dx, r_dy) = getXYdir ray
     (s_px, s_py) = getXY line
     (s_dx, s_dy) = getXYdir line
-    t1 = (s_dx * (r_py-s_py) - s_dy * (s_px-r_px)) / (-r_dx * s_dy + r_dy * s_dx)
-    t2 = (r_px + r_dx * t1 - s_px) / s_dx 
+    t1 =  ((s_dx * (r_py-s_py) - s_dy * (s_px-r_px)) / (-r_dx * s_dy + r_dy * s_dx))
+    t2 =  ((r_px + r_dx * t1 - s_px) / s_dx)
   in
-    validIntersect t1 t2 line.length
+    validIntersect (toFloat (round t1)) (toFloat (round t2)) line.length
 
+-- NEW FIXED
 -- If given t1 & t2 imply a valid intersection was found, return t1 
 -- (i.e. length of ray to intersection with line). Else, return Nothing.
 validIntersect : Float -> Float -> Float -> Maybe Float
 validIntersect t1 t2 len =
-  if isNaN t2 || t2 > len || t2 <= 0 then
+  if ( (Debug.log "valid intersect bool 1a" (isNaN t2)) || (Debug.log "valid intersect bool 1b" (t2 > len)) || (Debug.log "valid intersect bool 1c" (t2 < 0))) then
+  -- if  (isNaN t2) || (t2 > len) || (t2 <= 0) then  
     Nothing
-  else if t1 <= 0 then
+  else if Debug.log "valid intersect bool 2" (t1 <= 0) then
     Nothing
   else
     Just t1
@@ -227,20 +278,21 @@ view model =
           -- , viewBox ( "0 " ++ "0 " ++ (String.fromFloat (boxWidth)) 
           --             ++ " " ++ (String.fromFloat (boxHeight)) )
           ]
-          ( List.concat [ (List.map (drawLine "midnightblue") model.lines)
-                        , [drawVisibilityPolygon model.rays] 
-                        , (List.map (drawLine "gold") model.rays)   
+          ( List.concat [ [drawVisibilityPolygon model.rays] 
+                        , (List.map (drawLine "palegoldenrod" "1.5") model.rays)  
+                        , (List.map (drawLine "midnightblue" "3") model.lines) 
                         ]
           )
 
-drawLine : String -> Line -> Svg.Svg msg
-drawLine color line =
+drawLine : String -> String -> Line -> Svg.Svg msg
+drawLine color width line =
     Svg.line
-    [ x1 (String.fromFloat line.startPt.x)
-    , y1 (String.fromFloat line.startPt.y)
-    , x2 (String.fromFloat (lineEndPt line).x)
-    , y2 (String.fromFloat (lineEndPt line).y)
-    , stroke color]
+    [ x1 (String.fromFloat line.initPt.x)
+    , y1 (String.fromFloat line.initPt.y)
+    , x2 (String.fromFloat (lineFinalPt line).x)
+    , y2 (String.fromFloat (lineFinalPt line).y)
+    , stroke color
+    , strokeWidth width]
     []
 
 drawVisibilityPolygon : List Line -> Svg.Svg msg
@@ -248,7 +300,7 @@ drawVisibilityPolygon rays =
   Svg.polygon 
   [ points
       (rays 
-        |> List.map lineEndPt -- get end points of given list of lines
+        |> List.map lineFinalPt -- get end points of given list of lines
         |> List.map pointAsString
         |> String.concat
       )
