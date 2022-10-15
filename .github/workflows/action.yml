@@ -1,9 +1,10 @@
-name: 'Set up Elm environment'
+name: 'Elm environment Setup'
+description: 'Set up Elm environment'
 inputs:
   elm-version:
     description: 'Version of Elm to use'
     required: true
     default: '0.19.1'
-  runs:
-    using: 'node16'
-    main: 'index.js'
+runs:
+  using: 'node16'
+  main: 'index.js'
