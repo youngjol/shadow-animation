@@ -9,12 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@main
-    - name: Install elm, elm-format and cache the ELM_HOME directory
-      uses: mpizenberg/elm-tooling-action@v1.2
-      with:
-        cache-key: elm-home-${{ hashFiles('elm-tooling.json', 'elm.json') }}
-    - name: Making sure the installation worked
-      run: elm --version
+    - name: Setup Elm environment
+      uses: ./.github/workflows/action.yml
+      with: 
+        elm-version: 0.19.1
     - name: Compile elm Main file
       run: elm make src/Main.elm
      
