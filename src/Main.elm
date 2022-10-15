@@ -280,7 +280,7 @@ view model =
           ]
           ( List.concat [ [drawVisibilityPolygon model.rays] 
                         , (List.map (drawLine "palegoldenrod" "1.5") model.rays)  
-                        , (List.map (drawLine "midnightblue" "3") model.lines) 
+                        , (List.map (drawLine "coral" "3") model.lines) 
                         ]
           )
 
