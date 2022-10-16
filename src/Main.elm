@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Browser.Events as E
+import Html.Events exposing (onClick)
 import Html exposing (..)
 import Maybe exposing (withDefault)
 import Json.Decode as D
@@ -42,6 +43,7 @@ init _ =
         , makeLine 0.7 0.5 (0.4*boxWidth) 165
         ]
     , rays = []
+    , rayVisibility = False
     }
   , Cmd.none
   )
@@ -69,6 +71,7 @@ type alias Model =
   { mousePos : Point
   , lines : List Line
   , rays : List Line
+  , rayVisibility : Bool
   }
 
 type alias Point = 
@@ -126,7 +129,7 @@ twoPtsAngle initPt finalPt =
 {- UPDATE -}
 --------------------------------------------------------------------------------
 type Msg 
-  = MouseMove Point
+  = MouseMove Point | RayVisibilityToggle
 
 -- Return updated model given a message
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -138,6 +141,9 @@ update msg model =
         }
       , Cmd.none
       )
+    RayVisibilityToggle ->
+      ( { model | rayVisibility = (not model.rayVisibility) }, Cmd.none)
+    
 
 -- Constrain given point within display box
 constrainPos : Point -> Point
@@ -272,17 +278,22 @@ validIntersect t1 t2 len =
 {- VIEW -}
 --------------------------------------------------------------------------------
 -- Given model, return HTML page
-view : Model -> Html msg
+view : Model -> Html Msg
 view model =
-  Svg.svg [ width (String.fromFloat boxWidth) , height (String.fromFloat boxHeight)
-          -- , viewBox ( "0 " ++ "0 " ++ (String.fromFloat (boxWidth)) 
-          --             ++ " " ++ (String.fromFloat (boxHeight)) )
-          ]
-          ( List.concat [ [drawVisibilityPolygon model.rays] 
-                        , (List.map (drawLine "palegoldenrod" "1.5") model.rays)  
-                        , (List.map (drawLine "midnightblue" "3") model.lines) 
-                        ]
-          )
+  div [] 
+    [
+      Svg.svg [ width (String.fromFloat boxWidth) , height (String.fromFloat boxHeight)
+              ]
+              ( List.concat [ [drawVisibilityPolygon model.rays] 
+                            , (if model.rayVisibility 
+                                  then (List.map (drawLine "palegoldenrod" "1.5") model.rays) 
+                                  else [] 
+                              )
+                            , (List.map (drawLine "midnightblue" "3") model.lines) 
+                            ]
+              )
+    , button [ onClick RayVisibilityToggle ] [ text "Toggle Ray Visibility" ]
+    ]
 
 drawLine : String -> String -> Line -> Svg.Svg msg
 drawLine color width line =
