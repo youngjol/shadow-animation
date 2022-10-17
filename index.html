@@ -5889,7 +5889,6 @@ var $author$project$Main$updateRays = F2(
 			$elm$core$List$map,
 			$author$project$Main$nearestIntersect(lines),
 			newRays);
-		var updatedRays = A3($elm$core$List$map2, $author$project$Main$updateLength, newLengths, newRays);
 		return A2(
 			$elm$core$List$sortBy,
 			function ($) {
@@ -5918,6 +5917,7 @@ var $author$project$Main$update = F2(
 		}
 	});
 var $author$project$Main$RayVisibilityToggle = {$: 'RayVisibilityToggle'};
+var $elm$html$Html$a = _VirtualDom_node('a');
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$core$String$fromFloat = _String_fromNumber;
@@ -5976,7 +5976,23 @@ var $author$project$Main$drawVisibilityPolygon = function (rays) {
 			]),
 		_List_Nil);
 };
+var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $elm$svg$Svg$Attributes$height = _VirtualDom_attribute('height');
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		$elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
+};
+var $elm$html$Html$li = _VirtualDom_node('li');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -5994,50 +6010,147 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
+var $elm$html$Html$section = _VirtualDom_node('section');
+var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
+var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
 var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
+var $elm$html$Html$ul = _VirtualDom_node('ul');
 var $elm$svg$Svg$Attributes$width = _VirtualDom_attribute('width');
 var $author$project$Main$view = function (model) {
 	return A2(
 		$elm$html$Html$div,
-		_List_Nil,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$Attributes$style, 'font-family', 'Courier New'),
+				A2($elm$html$Html$Attributes$style, 'width', '500px')
+			]),
 		_List_fromArray(
 			[
 				A2(
-				$elm$svg$Svg$svg,
+				$elm$html$Html$section,
+				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$svg$Svg$Attributes$width(
-						$elm$core$String$fromFloat($author$project$Main$boxWidth)),
-						$elm$svg$Svg$Attributes$height(
-						$elm$core$String$fromFloat($author$project$Main$boxHeight))
-					]),
-				$elm$core$List$concat(
-					_List_fromArray(
-						[
-							_List_fromArray(
+						A2(
+						$elm$svg$Svg$svg,
+						_List_fromArray(
 							[
-								$author$project$Main$drawVisibilityPolygon(model.rays)
+								$elm$svg$Svg$Attributes$width(
+								$elm$core$String$fromFloat($author$project$Main$boxWidth)),
+								$elm$svg$Svg$Attributes$height(
+								$elm$core$String$fromFloat($author$project$Main$boxHeight))
 							]),
-							model.rayVisibility ? A2(
-							$elm$core$List$map,
-							A2($author$project$Main$drawLine, 'palegoldenrod', '1.5'),
-							model.rays) : _List_Nil,
-							A2(
-							$elm$core$List$map,
-							A2($author$project$Main$drawLine, 'midnightblue', '3'),
-							model.lines)
-						]))),
+						$elm$core$List$concat(
+							_List_fromArray(
+								[
+									_List_fromArray(
+									[
+										$author$project$Main$drawVisibilityPolygon(model.rays)
+									]),
+									model.rayVisibility ? A2(
+									$elm$core$List$map,
+									A2($author$project$Main$drawLine, 'palegoldenrod', '1.5'),
+									model.rays) : _List_Nil,
+									A2(
+									$elm$core$List$map,
+									A2($author$project$Main$drawLine, 'midnightblue', '3'),
+									model.lines)
+								])))
+					])),
 				A2(
-				$elm$html$Html$button,
+				$elm$html$Html$section,
+				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$html$Html$Events$onClick($author$project$Main$RayVisibilityToggle)
-					]),
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick($author$project$Main$RayVisibilityToggle)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Toggle Ray Visibility')
+							]))
+					])),
+				A2(
+				$elm$html$Html$section,
+				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Toggle Ray Visibility')
+						A2(
+						$elm$html$Html$h1,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Shadow Animation in Elm')
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Instructions:'),
+								A2(
+								$elm$html$Html$ul,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$li,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Try to move cursor around box above to show visible areas (colored) and shadows (no color)')
+											])),
+										A2(
+										$elm$html$Html$li,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Click on \"Toggle Ray Visibility\" and move cursor in the box to see how rays are casted')
+											]))
+									]))
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'margin-top', '50px')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Source code: '),
+								A2(
+								$elm$html$Html$a,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$href('https://github.com/youngjol/shadow-animation')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Github')
+									]))
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Based on: '),
+								A2(
+								$elm$html$Html$a,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$href('https://ncase.me/sight-and-light/')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('tutorial')
+									]))
+							]))
 					]))
 			]));
 };
