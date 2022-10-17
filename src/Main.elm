@@ -4,6 +4,7 @@ import Browser
 import Browser.Events as E
 import Html.Events exposing (onClick)
 import Html exposing (..)
+import Html.Attributes as A
 import Maybe exposing (withDefault)
 import Json.Decode as D
 import Svg
@@ -48,12 +49,6 @@ init _ =
   , Cmd.none
   )
 
--- just initialize 3x the number of lines / or maybe we don't even need any tbh 
-
-multiply : Float -> Float -> Float
-multiply a b =
-  a * b
-
 makeLine : Float -> Float -> Float -> Float -> Line
 makeLine startX startY length angle = -- startX, startY are proportions of boxWidth & boxHeight
   { initPt = { x = boxWidth * startX, y = boxHeight * startY }, angle = angle, length = length}
@@ -95,14 +90,10 @@ getXYdir : Line -> (Float, Float)
 getXYdir line =
   Tuple.pair (cos (degrees line.angle)) (sin (degrees line.angle))
 
-
 -- Return end point of given line
 lineFinalPt : Line -> Point
 lineFinalPt line =
   let
-    -- lineInput = Debug.log "line" line
-    -- (x1, y1) = (getXY line)
-    -- (dx, dy) =  Debug.log "lineFinalPt xy direction" (getXYdir line)
     (x1, y1) = (getXY line)
     (dx, dy) =  (getXYdir line)
     len = line.length
@@ -114,7 +105,6 @@ linesParallel line1 line2 =
   (cos (degrees line1.angle) == cos (degrees line2.angle)) || 
   (sin (degrees line1.angle) == sin (degrees line2.angle)) 
 
--- NEW
 -- Return the angle (direction) of the line with its end points being the given two points
 twoPtsAngle : Point -> Point -> Float
 twoPtsAngle initPt finalPt =
@@ -144,7 +134,6 @@ update msg model =
     RayVisibilityToggle ->
       ( { model | rayVisibility = (not model.rayVisibility) }, Cmd.none)
     
-
 -- Constrain given point within display box
 constrainPos : Point -> Point
 constrainPos pt =
@@ -160,22 +149,9 @@ constrainFloat val min max =
   else if val > max then max
   else val
 
--- NEW
 updateRays : Point -> List Line -> List Line
 updateRays mousePos lines =
   let
-    -- -- Create a list of all end points of given lines
-    -- linePts = List.concat [(List.map .initPt lines), (List.map lineFinalPt lines)]
-    -- -- Create a list of the angle of the ray from mousePos to each point in linePts
-    -- rayAngles =  ((List.map (twoPtsAngle mousePos) linePts))
-    -- -- Create a list of rays (lines) with angles corresponding to each of rayAngles & its +/-0.005 offset
-    -- newRays = Debug.log "newRays" (List.concat (List.map (getOffsetRays 0 mousePos) rayAngles))
-    -- -- Get new ray lengths by finding nearest intersection with a line 
-    -- newLengths = Debug.log "New lengths" (List.map (nearestIntersect lines) newRays)
-    -- updatedRays = List.map2 updateLength newLengths newRays
-    -- initPts = Debug.log "Ray init pts" (List.map .initPt updatedRays)
-    -- finalPts = Debug.log "Ray final pts" (List.map lineFinalPt updatedRays)
-
     -- Create a list of all end points of given lines
     linePts = List.concat [(List.map .initPt lines), (List.map lineFinalPt lines)]
     -- Create a list of the angle of the ray from mousePos to each point in linePts
@@ -184,14 +160,9 @@ updateRays mousePos lines =
     newRays = List.concat (List.map (getOffsetRays 0.5 mousePos) rayAngles)
     -- Get new ray lengths by finding nearest intersection with a line 
     newLengths = List.map (nearestIntersect lines) newRays
-    updatedRays = List.map2 updateLength newLengths newRays
-    
-    
   in
     List.sortBy .angle (List.map2 updateLength newLengths newRays)
     
-
-
 getOffsetRays : Float -> Point -> Float -> List Line
 getOffsetRays offSet initPt angle =
   [ { initPt = initPt, angle = angle - offSet, length = 0}
@@ -200,7 +171,6 @@ getOffsetRays offSet initPt angle =
   , { initPt = initPt, angle = angle + offSet * 1/2, length = 0}
   , { initPt = initPt, angle = angle + offSet, length = 0}
   ]
-
 
 updatePoint : Point -> Line -> Line
 updatePoint pt line =
@@ -231,10 +201,8 @@ findIntersect ray line =
   else if List.member (Tuple.second (getXYdir ray)) [-1, 1] then
     findVerticalRayIntersect ray line
   else
-    -- Debug.log "find intersect" (findNonVerticalRayIntersect ray line)
     findNonVerticalRayIntersect ray line
 
--- NEW FIXED: toFloat round
 findNonVerticalRayIntersect : Line -> Line -> Maybe Float
 findNonVerticalRayIntersect ray line =
   let
@@ -247,7 +215,6 @@ findNonVerticalRayIntersect ray line =
   in
     Debug.log "validIntersect" (validIntersect (toFloat (round t1)) (toFloat (round t2)) line.length)
 
--- NEW FIXED: toFloat round
 findVerticalRayIntersect : Line -> Line -> Maybe Float
 findVerticalRayIntersect ray line = 
   let
@@ -260,13 +227,11 @@ findVerticalRayIntersect ray line =
   in
     validIntersect (toFloat (round t1)) (toFloat (round t2)) line.length
 
--- NEW FIXED
 -- If given t1 & t2 imply a valid intersection was found, return t1 
 -- (i.e. length of ray to intersection with line). Else, return Nothing.
 validIntersect : Float -> Float -> Float -> Maybe Float
 validIntersect t1 t2 len =
   if ( (Debug.log "valid intersect bool 1a" (isNaN t2)) || (Debug.log "valid intersect bool 1b" (t2 > len)) || (Debug.log "valid intersect bool 1c" (t2 < 0))) then
-  -- if  (isNaN t2) || (t2 > len) || (t2 <= 0) then  
     Nothing
   else if Debug.log "valid intersect bool 2" (t1 <= 0) then
     Nothing
@@ -280,19 +245,40 @@ validIntersect t1 t2 len =
 -- Given model, return HTML page
 view : Model -> Html Msg
 view model =
-  div [] 
-    [
-      Svg.svg [ width (String.fromFloat boxWidth) , height (String.fromFloat boxHeight)
-              ]
-              ( List.concat [ [drawVisibilityPolygon model.rays] 
-                            , (if model.rayVisibility 
-                                  then (List.map (drawLine "palegoldenrod" "1.5") model.rays) 
-                                  else [] 
-                              )
-                            , (List.map (drawLine "midnightblue" "3") model.lines) 
-                            ]
-              )
-    , button [ onClick RayVisibilityToggle ] [ text "Toggle Ray Visibility" ]
+  div [ A.style "font-family" "Courier New", A.style "width" "500px"] [
+    section [] 
+      [ Svg.svg 
+        [ width (String.fromFloat boxWidth) , height (String.fromFloat boxHeight)]
+        ( List.concat 
+          [ [drawVisibilityPolygon model.rays] 
+          , (if model.rayVisibility 
+                then (List.map (drawLine "palegoldenrod" "1.5") model.rays) 
+                else [] 
+            )
+          , (List.map (drawLine "midnightblue" "3") model.lines) 
+          ]
+        )
+      ]
+    , section [] 
+        [ button [ onClick RayVisibilityToggle ] [ text "Toggle Ray Visibility" ] ]
+    , section [] 
+        [ h1 [] [ text "Shadow Animation in Elm" ]
+        , div [] 
+            [ text "Instructions:"
+            , ul [] 
+                [ li [] [text "Try to move cursor around box above to show visible areas (colored) and shadows (no color)"]
+                , li [] [text "Click on \"Toggle Ray Visibility\" and move cursor in the box to see how rays are casted"]
+                ]
+            ]
+        , div [ A.style "margin-top" "50px"]
+            [ text "Source code: "
+            , a [ A.href "https://github.com/youngjol/shadow-animation" ] [ text "Github" ]
+            ]
+        , div []
+            [ text "Based on: "
+            , a [ A.href "https://ncase.me/sight-and-light/" ] [ text "tutorial" ]
+            ]
+        ]
     ]
 
 drawLine : String -> String -> Line -> Svg.Svg msg
